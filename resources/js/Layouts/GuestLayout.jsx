@@ -1,16 +1,17 @@
-import ApplicationLogo from '@/Components/ApplicationLogo';
 import { Link } from '@inertiajs/react';
+import useFlashToast from '@/Hooks/useFlashToast';
 
 export default function GuestLayout({ children }) {
+    useFlashToast();
+
     return (
-        <div className="flex min-h-screen flex-col items-center bg-gray-100 pt-6 sm:justify-center sm:pt-0">
-            <div>
-                <Link href="/">
-                    <ApplicationLogo className="h-20 w-20 fill-current text-gray-500" />
+        <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 px-4 py-10 page-transition">
+            <div className="mb-8">
+                <Link href={route('home')} className="font-serif text-3xl font-semibold tracking-tight text-gray-900 hover:text-gray-600 transition-colors duration-300 cursor-pointer">
+                    Bloom&amp;Glow
                 </Link>
             </div>
-
-            <div className="mt-6 w-full overflow-hidden bg-white px-6 py-4 shadow-md sm:max-w-md sm:rounded-lg">
+            <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-gray-200 bg-white p-8 sm:p-10 shadow-xl transition-all duration-300">
                 {children}
             </div>
         </div>

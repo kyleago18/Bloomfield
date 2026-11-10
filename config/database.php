@@ -81,7 +81,13 @@ return [
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                // Abort connection attempt after 10 seconds
+                PDO::ATTR_TIMEOUT => (int) env('DB_CONNECT_TIMEOUT', 10),
+                // Use persistent connections to reuse existing DB connections across requests
+                PDO::ATTR_PERSISTENT => (bool) env('DB_PERSISTENT_CONNECTION', false),
             ]) : [],
+            // Laravel query timeout: abort any single query running longer than this (seconds)
+            'timeout' => (int) env('DB_QUERY_TIMEOUT', 30),
         ],
 
         'pgsql' => [
@@ -97,6 +103,9 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => env('DB_SSLMODE', 'prefer'),
+            'options' => [
+                PDO::ATTR_EMULATE_PREPARES => true,
+            ],
         ],
 
         'sqlsrv' => [

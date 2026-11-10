@@ -1,3 +1,314 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+    --bg: #fffcfb;
+    --bg-soft: #fdf6f7;
+    --surface: #ffffff;
+    --ink: #2a2426;
+    --ink-muted: #6b6164;
+    --blush: #d4727a;
+    --blush-dark: #b85560;
+    --blush-soft: #f9e8ea;
+    --line: rgba(212, 114, 122, 0.16);
+    --shadow-soft: 0 12px 40px rgba(42, 36, 38, 0.06);
+    --radius: 1.25rem;
+}
+
+@layer base {
+    button, a, [role="button"], input[type="submit"], input[type="button"] {
+        @apply cursor-pointer;
+    }
+
+    html {
+        scroll-behavior: smooth;
+    }
+
+    body {
+        @apply bg-bloom-bg text-bloom-text antialiased font-sans;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+        @apply font-serif text-bloom-text;
+    }
+
+    ::selection {
+        background: rgba(212, 114, 122, 0.22);
+    }
+}
+
+@layer components {
+    .store-shell {
+        @apply min-h-screen text-[var(--ink)];
+    }
+
+    .store-container {
+        @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+    }
+
+    .section-space {
+        @apply py-16 md:py-24;
+    }
+
+    .eyebrow {
+        @apply text-[11px] font-semibold uppercase tracking-[0.22em] text-rose;
+    }
+
+    .display-title {
+        @apply font-serif text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tight text-[var(--ink)];
+    }
+
+    .surface-panel {
+        @apply bg-white/80 backdrop-blur-sm border border-[var(--line)] shadow-[var(--shadow-soft)];
+    }
+
+    .btn-primary {
+        @apply inline-flex items-center justify-center gap-2 rounded-full bg-bloom-green px-6 py-2.5 text-sm font-medium text-white font-sans
+            transition-all duration-300 hover:bg-opacity-90 hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98]
+            focus:outline-none focus-visible:ring-2 focus-visible:ring-bloom-green/40 focus-visible:ring-offset-2
+            disabled:opacity-40 disabled:pointer-events-none disabled:translate-y-0;
+    }
+
+    .btn-secondary {
+        @apply inline-flex items-center justify-center gap-2 rounded-full bg-bloom-peach text-white px-6 py-2.5 text-sm font-medium font-sans
+            transition-all duration-300 hover:bg-opacity-90 hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98]
+            focus:outline-none focus-visible:ring-2 focus-visible:ring-bloom-peach/40 focus-visible:ring-offset-2
+            disabled:opacity-40 disabled:pointer-events-none disabled:translate-y-0;
+    }
+
+    .btn-ghost {
+        @apply inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-bloom-text font-sans
+            transition-all duration-200 hover:text-bloom-green hover:bg-bloom-green/10 hover:-translate-y-0.5 active:scale-[0.98];
+    }
+
+    .field-label {
+        @apply mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)];
+    }
+
+    .field-input {
+        @apply w-full rounded-full border-bloom-green/20 bg-white/90 text-sm text-bloom-text shadow-none
+            placeholder:text-gray-400 focus:border-bloom-green focus:ring-bloom-green/30 transition-colors duration-200;
+    }
+
+    .checkout-section {
+        @apply rounded-2xl border border-[var(--line)] bg-white/70 p-5 md:p-6 backdrop-blur-sm;
+    }
+
+    .nav-glass {
+        @apply bg-white/90 backdrop-blur-md border border-white/70 shadow-[0_10px_40px_rgba(42,36,38,0.12)];
+    }
+
+    /* ── Neumorphic Soft UI Utilities ── */
+    .neu-card {
+        background: #EAF0F6;
+        box-shadow: 8px 8px 18px #c8d0db, -8px -8px 18px #ffffff;
+        border: 1px solid rgba(255, 255, 255, 0.8);
+    }
+    .neu-floral-card {
+        background: #FAF0F3;
+        box-shadow: 8px 8px 18px #e2d7da, -8px -8px 18px #ffffff;
+        border: 1px solid rgba(255, 255, 255, 0.85);
+    }
+    .neu-pressed {
+        background: #EAF0F6;
+        box-shadow: inset 4px 4px 8px #c8d0db, inset -4px -4px 8px #ffffff;
+    }
+    .neu-floral-pressed {
+        background: #FAF0F3;
+        box-shadow: inset 4px 4px 8px #e2d7da, inset -4px -4px 8px #ffffff;
+    }
+    .neu-btn {
+        background: #EAF0F6;
+        box-shadow: 5px 5px 12px #c8d0db, -5px -5px 12px #ffffff;
+        transition: all 0.2s ease-in-out;
+    }
+    .neu-btn:hover {
+        box-shadow: 3px 3px 8px #c8d0db, -3px -3px 8px #ffffff;
+    }
+    .neu-btn:active {
+        box-shadow: inset 3px 3px 6px #c8d0db, inset -3px -3px 6px #ffffff;
+    }
+
+    /* ── Modern Scale Link Hover Utility ── */
+    .link-hover-scale {
+        @apply inline-block transition-transform duration-200 ease-out cursor-pointer no-underline hover:no-underline hover:scale-[1.05] active:scale-[0.98];
+    }
+}
+
+@keyframes nav-pulse-ring {
+    0% { transform: scale(0.85); opacity: 0.55; }
+    70% { transform: scale(1.35); opacity: 0; }
+    100% { transform: scale(1.35); opacity: 0; }
+}
+
+@keyframes nav-slide-up {
+    from { transform: translateY(14px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes nav-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes fade-up {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.nav-pulse-ring {
+    animation: nav-pulse-ring 2s ease-out infinite;
+}
+
+.nav-sheet-enter {
+    animation: nav-slide-up 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.nav-banner-enter {
+    animation: nav-fade-in 0.25s ease-out both;
+}
+
+.animate-fade-up {
+    animation: fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-fade-up-delay {
+    animation: fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both;
+}
+
+.leaflet-container {
+    font-family: inherit;
+    background: #fdf6f7;
+}
+
+.nav-user-puck,
+.nav-shop-marker {
+    background: transparent !important;
+    border: none !important;
+}
+
+.hover-lift {
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.hover-lift:hover {
+    transform: translateY(-6px) scale(1.02);
+    box-shadow: 0 12px 30px rgba(42, 36, 38, 0.12);
+}
+
+@keyframes float-gentle-1 {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-8px) rotate(2deg); }
+}
+@keyframes float-gentle-2 {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(8px) rotate(-2deg); }
+}
+
+.animate-float-1 {
+    animation: float-gentle-1 8s ease-in-out infinite;
+}
+.animate-float-2 {
+    animation: float-gentle-2 10s ease-in-out infinite;
+}
+
+@keyframes ken-burns {
+    0% { transform: scale(1.03) translate(0, 0); }
+    50% { transform: scale(1.08) translate(-1%, -0.5%); }
+    100% { transform: scale(1.03) translate(0, 0); }
+}
+
+.animate-ken-burns {
+    animation: ken-burns 28s ease-in-out infinite;
+}
+
+/* Reduced Motion Accessibility Overrides */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+
+    .animate-fade-up,
+    .animate-fade-up-delay,
+    .animate-float-1,
+    .animate-float-2,
+    .animate-ken-burns,
+    .animate-petal-drift {
+        animation: none !important;
+        transform: none !important;
+        opacity: 1 !important;
+    }
+}
+
+/* Dark Mode Overrides */
+.dark {
+    --bg: #141112;
+    --bg-soft: #1d1819;
+    --surface: #262021;
+    --ink: #f2e9ea;
+    --ink-muted: #af9fa1;
+    --blush: #b55d65;
+    --blush-dark: #cc747c;
+    --blush-soft: #2e1d1f;
+    --line: rgba(249, 232, 234, 0.12);
+    --shadow-soft: 0 12px 40px rgba(0, 0, 0, 0.45);
+}
+
+.dark body {
+    background-color: var(--bg) !important;
+    background-image:
+        radial-gradient(ellipse 80% 50% at 100% -20%, rgba(212, 114, 122, 0.04), transparent),
+        radial-gradient(ellipse 60% 40% at 0% 100%, rgba(46, 29, 31, 0.6), transparent) !important;
+    color: var(--ink) !important;
+}
+
+.dark .bg-white,
+.dark .bg-white\/60,
+.dark .bg-white\/70,
+.dark .bg-white\/80,
+.dark .bg-white\/90 {
+    background-color: rgba(38, 32, 33, 0.75) !important;
+    border-color: rgba(249, 232, 234, 0.08) !important;
+}
+
+.dark .text-gray-900,
+.dark .text-slate-900,
+.dark .text-ink {
+    color: var(--ink) !important;
+}
+
+.dark .text-gray-500,
+.dark .text-slate-500,
+.dark .text-ink-muted {
+    color: var(--ink-muted) !important;
+}
+
+.dark .border-gray-100,
+.dark .border-gray-200,
+.dark .border-rose\/10,
+.dark .border-white\/60 {
+    border-color: var(--line) !important;
+}
+
+.dark select,
+.dark input {
+    background-color: rgba(38, 32, 33, 0.8) !important;
+    border-color: var(--line) !important;
+    color: var(--ink) !important;
+}
+
+/* Hide Stripe "Powered by" badge */
+.__PrivateStripeElement iframe[name*="privateStripe"] ~ div,
+.p-LinkAutofillPrompt,
+a[href*="stripe.com"][target="_blank"] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+}

@@ -81,7 +81,7 @@ class PetalsSeeder extends Seeder
         // ──────────────────────────────────────────────
         $customer1Id = DB::table('users')->insertGetId([
             'name'     => 'Jane Doe',
-            'email'    => 'jane@example.com',
+            'email'    => 'jane.doe@gmail.com',
             'password' => Hash::make('password123'),
             'role'     => 'customer',
             'shop_id'  => null,
@@ -91,7 +91,7 @@ class PetalsSeeder extends Seeder
 
         $customer2Id = DB::table('users')->insertGetId([
             'name'     => 'Carlo Cruz',
-            'email'    => 'carlo@example.com',
+            'email'    => 'carlo.cruz@gmail.com',
             'password' => Hash::make('password123'),
             'role'     => 'customer',
             'shop_id'  => null,

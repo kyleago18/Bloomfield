@@ -23,7 +23,7 @@ const Trigger = ({ children }) => {
 
     return (
         <>
-            <div onClick={toggleOpen}>{children}</div>
+            <div onClick={toggleOpen} className="cursor-pointer select-none">{children}</div>
 
             {open && (
                 <div

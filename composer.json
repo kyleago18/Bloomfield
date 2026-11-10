@@ -10,10 +10,14 @@
         "inertiajs/inertia-laravel": "^2.0",
         "laravel/framework": "^13.8",
         "laravel/sanctum": "^4.0",
+        "laravel/scout": "^11.5",
+        "laravel/socialite": "^5.28",
         "laravel/tinker": "^3.0",
+        "stripe/stripe-php": "^21.0",
         "tightenco/ziggy": "^2.0"
     },
     "require-dev": {
+        "barryvdh/laravel-debugbar": "^4.4",
         "fakerphp/faker": "^1.23",
         "laravel/breeze": "^2.4",
         "laravel/pail": "^1.2.5",

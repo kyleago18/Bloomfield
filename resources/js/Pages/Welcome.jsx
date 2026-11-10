@@ -1,246 +1,522 @@
-import { Link, Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
+import { useMemo, useState, useEffect } from 'react';
 import { useCart } from '../Contexts/CartContext';
 import CartDrawer from '../Components/CartDrawer';
+import StoreHeader from '../Components/StoreHeader';
+import StoreFooter from '../Components/StoreFooter';
+import ProductCard from '../Components/ProductCard';
+import ProductCarousel from '../Components/ProductCarousel';
+import { Search, X, Loader2, Clock, Gift, Heart, Sparkles, HandHeart, Feather, Footprints, Mail, Truck, Leaf, ShieldCheck, Flower2, ShoppingBag, Star } from 'lucide-react';
+import BackgroundSlideshow from '../Components/BackgroundSlideshow';
+import { getProductImage } from '@/utils/productImages';
+import ScrollReveal from '../Components/ScrollReveal';
 
-export default function Welcome({ auth, products }) {
-    const { cartCount, toggleCartDrawer, addToCart } = useCart();
+const HERO_IMAGES = [
+    '/images/d1.png',
+    '/images/d2.png',
+    '/images/d3.png',
+    '/images/d4.png',
+    '/images/d5.png',
+    '/images/d6.png'
+];
 
-    // Map products to the correct local images
-    const getImageUrl = (name) => {
-        const map = {
-            "Red Roses Bouquet": "/images/red_roses_white_center_bouquet.png",
-            "Sunflowers": "/images/money_bouquet_sunflower.png",
-            "Carnations": "/images/colorful_carnation_rose_bouquet.png",
-            "White Lilies": "/images/pink_lily_and_roses_bouquet.png",
-            "Chrysanthemums": "/images/white_lisianthus_bouquet_1.png",
-            "Peonies": "/images/pink_roses_chantelle_collection.png"
-        };
-        return map[name] || "/images/large_pink_rose_bouquet.png";
+export default function Welcome({ auth, products = [] }) {
+    const { addToCart } = useCart();
+    const [newsletterEmail, setNewsletterEmail] = useState('');
+    const [newsletterMessage, setNewsletterMessage] = useState('');
+
+    const sellerId = auth?.user?.seller?.id;
+
+    const safeProducts = useMemo(
+        () => {
+            const list = Array.isArray(products) ? products : [];
+            if (sellerId) {
+                return list.filter(p => p.seller_id !== sellerId);
+            }
+            return list;
+        },
+        [products, sellerId]
+    );
+
+    const featured = useMemo(() => safeProducts.filter(p => p.is_featured).slice(0, 8), [safeProducts]);
+    const featuredBottom = useMemo(() => safeProducts.slice(8, 16), [safeProducts]);
+    
+    const [heroImageIndex, setHeroImageIndex] = useState(0);
+    const [heroFade, setHeroFade] = useState(true);
+
+    useEffect(() => {
+        if (HERO_IMAGES.length <= 1) {
+            setHeroImageIndex(0);
+            return;
+        }
+        const interval = setInterval(() => {
+            setHeroFade(false);
+            setTimeout(() => {
+                setHeroImageIndex((prev) => (prev + 1) % HERO_IMAGES.length);
+                setHeroFade(true);
+            }, 800); // 800ms smooth fade transition
+        }, 5000); // 5s rotation
+        return () => clearInterval(interval);
+    }, []);
+
+    const currentHeroImageUrl = HERO_IMAGES[heroImageIndex] || '/images/d1.png';
+
+    // Dynamic Story Banner slideshow
+    const storyBannerImages = [
+        '/images/2.jpg',
+        '/images/3.jpg',
+        '/images/4.jpg',
+        '/images/5.jpg',
+        '/images/6.jpg'
+    ];
+    const [storyBannerIndex, setStoryBannerIndex] = useState(0);
+    const [storyBannerFade, setStoryBannerFade] = useState(true);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setStoryBannerFade(false);
+            setTimeout(() => {
+                setStoryBannerIndex((prev) => (prev + 1) % storyBannerImages.length);
+                setStoryBannerFade(true);
+            }, 800); // 800ms smooth fade transition
+        }, 4000); // 4s rotation
+        return () => clearInterval(interval);
+    }, []);
+
+    // Dynamic Hero Title
+    const titleWords = [
+        "BRIGHTER.",
+        "FRESHER.",
+        "SWEETER.",
+        "BOLDER."
+    ];
+    const [titleIndex, setTitleIndex] = useState(0);
+    const [titleFade, setTitleFade] = useState(true);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setTitleFade(false);
+            setTimeout(() => {
+                setTitleIndex((prev) => (prev + 1) % titleWords.length);
+                setTitleFade(true);
+            }, 500);
+        }, 3000);
+        return () => clearInterval(interval);
+    }, [titleWords.length]);
+
+
+
+    // Search state
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        if (!searchQuery.trim()) {
+            setIsSearching(false);
+            setSearchResults([]);
+            setIsLoading(false);
+            return;
+        }
+
+        setIsSearching(true);
+        setIsLoading(true);
+
+        const delayDebounceFn = setTimeout(async () => {
+            try {
+                const response = await fetch(`/api/products/search?q=${encodeURIComponent(searchQuery)}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    setSearchResults(data);
+                    console.log(`[Search Debug] Keyword: "${searchQuery}" | Matching Products: ${data.length}`, data);
+                }
+            } catch (error) {
+                console.error("Error searching products:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        }, 300);
+
+        return () => clearTimeout(delayDebounceFn);
+    }, [searchQuery]);
+
+
+    const popular = useMemo(() => [...safeProducts].sort((a, b) => (b.sales_count || 0) - (a.sales_count || 0)).slice(0, 8), [safeProducts]);
+
+    const filteredSearchResults = useMemo(() => {
+        if (sellerId) {
+            return searchResults.filter(p => p.seller_id !== sellerId);
+        }
+        return searchResults;
+    }, [searchResults, sellerId]);
+    
+    // Spotlight Carousel State
+    const [spotlightIndex, setSpotlightIndex] = useState(0);
+    const spotlightHooks = [
+        "Crowd Favorite",
+        "Trending Now",
+        "Perfect Gift Idea",
+        "Highly Recommended",
+        "Our Signature Pick"
+    ];
+
+    useEffect(() => {
+        if (!popular || popular.length === 0) return;
+        const interval = setInterval(() => {
+            setSpotlightIndex((prev) => (prev + 1) % Math.min(5, popular.length));
+        }, 10000); // 10s rotation
+        return () => clearInterval(interval);
+    }, [popular]);
+    const newArrivals = useMemo(() => safeProducts.filter(p => p.is_flash_sale).slice(0, 8), [safeProducts]);
+    const recommended = useMemo(() => {
+        const copy = [...safeProducts];
+        return copy.reverse().slice(0, 8).length ? copy.reverse().slice(0, 8) : safeProducts.slice(0, 8);
+    }, [safeProducts]);
+
+    const subscribeNewsletter = (event) => {
+        event.preventDefault();
+        if (!newsletterEmail.trim()) {
+            setNewsletterMessage('Enter a valid email address to join our list.');
+            return;
+        }
+        setNewsletterMessage(`Thanks! ${newsletterEmail.trim()} has been added to our list.`);
+        setNewsletterEmail('');
     };
 
     return (
         <>
-            <Head title="Welcome to Bloom&Grow" />
-            <CartDrawer getImageUrl={getImageUrl} />
-            <div className="min-h-screen bg-peach text-gray-800 font-sans">
-                {/* Header */}
-                <header className="px-6 md:px-12 py-6 flex items-center justify-between border-b border-peach-dark/30">
-                    <div className="flex-1">
-                        <span className="font-serif text-3xl font-bold tracking-tight text-sage-dark">
-                            Bloom&Grow
-                        </span>
-                    </div>
-                    
-                    {/* Desktop Nav */}
-                    <nav className="hidden md:flex flex-1 justify-center space-x-8">
-                        {['FLOWERS', 'SHOP', 'OCCASIONS', 'CORPORATE', 'ABOUT US'].map(item => (
-                            <Link key={item} href="#" className="text-sm font-semibold tracking-wider text-gray-700 hover:text-tangerine transition-colors">
-                                {item}
-                            </Link>
-                        ))}
-                    </nav>
+            <Head title="Bloom&Glow — Fresh Flowers, Thoughtfully Arranged" />
+            <CartDrawer />
 
-                    <div className="flex-1 flex justify-end items-center space-x-6">
-                        <button aria-label="Search" className="hover:text-tangerine transition-colors">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                        </button>
-                        {auth.user ? (
-                            <Link href={route('dashboard')} className="hover:text-tangerine transition-colors">
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                            </Link>
-                        ) : (
-                            <Link href={route('login')} className="hover:text-tangerine transition-colors">
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                            </Link>
-                        )}
-                        <button onClick={toggleCartDrawer} aria-label="Cart" className="relative hover:text-tangerine transition-colors">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
-                            <span className="absolute -top-1.5 -right-2 bg-tangerine text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">{cartCount}</span>
-                        </button>
-                    </div>
-                </header>
+            <div className="store-shell font-sans bg-[#FAF0F3] min-h-screen">
+
+                <StoreHeader auth={auth} />
 
                 {/* Hero Section */}
-                <section className="relative w-full min-h-[500px] md:h-[600px] flex items-center px-6 md:px-12 py-12 md:py-0 overflow-hidden bg-peach">
-                    <div className="relative z-10 max-w-lg">
-                        <h1 className="font-serif text-5xl md:text-7xl font-bold leading-tight text-sage-dark mb-6">
-                            BIGGER.<br />
-                            <span className="text-tangerine">BRIGHTER.</span><br />
-                            BETTER.
-                        </h1>
-                        <p className="text-gray-700 mb-8 max-w-sm text-lg">
-                            Thoughtfully designed flowers and gifts that celebrate life, nature and every meaningful moment.
-                        </p>
-                        <Link href="#" className="inline-flex items-center px-8 py-3 bg-sage hover:bg-sage-dark text-white font-semibold rounded-full transition-colors shadow-lg">
-                            SHOP FLOWERS
-                            <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                        </Link>
-                    </div>
-                    {/* Hero Graphic */}
-                    <div className="absolute right-0 top-0 w-2/3 h-full hidden md:block">
-                        <div className="absolute inset-0 bg-sage rounded-bl-[200px] transform translate-x-12 -translate-y-12"></div>
-                        <img 
-                            src="https://images.unsplash.com/photo-1563241597-12a4145ee5ff?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80" 
-                            alt="Beautiful bouquet" 
-                            className="absolute right-12 top-12 w-3/4 h-[90%] object-cover rounded-bl-[160px] shadow-2xl"
-                        />
+                <section className="relative pt-8 pb-16 md:pt-16 md:pb-20 overflow-hidden bg-pink-100">
+                    <div className="store-container relative z-10 flex flex-col md:flex-row items-center justify-between">
+                        <ScrollReveal className="w-full md:w-[40%] z-10 relative">
+                            <h1 className="font-serif text-5xl md:text-6xl lg:text-[72px] font-bold text-gray-800 leading-[1.05] tracking-tight mb-6">
+                                BIGGER.<br/>
+                                <span className={`text-transparent bg-clip-text bg-gradient-to-r from-[#E91E63] to-[#F472B6] transition-opacity duration-500 inline-block min-w-[300px] ${titleFade ? 'opacity-100' : 'opacity-0'}`}>{titleWords[titleIndex]}</span><br/>
+                                BETTER.
+                            </h1>
+                            <div className="mb-8">
+                                <p className="text-gray-900/80 text-base md:text-lg max-w-sm leading-relaxed transition-opacity duration-500 ease-in-out">
+                                    Thoughtfully designed flowers and gifts that celebrate life, nature and every meaningful moment.
+                                </p>
+                            </div>
+                            <div className="flex">
+                                <a href="#collections" className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#E91E63] via-[#F472B6] to-[#E07A5F] px-8 py-3.5 text-sm font-semibold text-white transition-all hover:opacity-90 shadow-[4px_4px_12px_rgba(233,30,99,0.25)] uppercase">
+                                    Explore Blooms
+                                </a>
+                            </div>
+                        </ScrollReveal>
+                        
+                        {/* Organic image area */}
+                        <div className="w-full md:w-[60%] mt-12 md:mt-0 relative flex justify-end">
+                            <div className="relative w-full flex items-center justify-center">
+                                {/* Full product image area */}
+                                <img 
+                                    src={currentHeroImageUrl}
+                                    alt="Featured Bouquet"
+                                    className={`w-full h-auto max-h-[550px] md:max-h-[650px] lg:max-h-[750px] object-contain transition-opacity duration-1000 ease-in-out ${heroFade ? 'opacity-100' : 'opacity-40'} transform scale-105 md:scale-[1.1] lg:scale-[1.15]`}
+                                />
+                            </div>
+                        </div>
                     </div>
                 </section>
 
                 {/* Features Bar */}
-                <section className="py-12 bg-white/50 border-y border-peach-dark/30">
-                    <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
-                        {[
-                            { title: 'SAME DAY DELIVERY', desc: 'Order before 11:00AM', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
-                            { title: 'FRESH FROM FARMS', desc: 'Handpicked with care', icon: 'M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z' },
-                            { title: 'EXPERT FLORISTS', desc: 'Crafted by professionals', icon: 'M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4' },
-                            { title: 'HAPPINESS GUARANTEED', desc: 'Your satisfaction, always', icon: 'M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z' },
-                        ].map(feature => (
-                            <div key={feature.title} className="flex items-center space-x-4">
-                                <div className="flex-shrink-0 w-12 h-12 bg-peach-dark rounded-full flex items-center justify-center text-sage-dark">
-                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d={feature.icon}></path></svg>
-                                </div>
-                                <div>
-                                    <h3 className="text-xs font-bold tracking-wider">{feature.title}</h3>
-                                    <p className="text-xs text-gray-500 mt-1">{feature.desc}</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </section>
-
-                {/* Shop Our Collections */}
-                <section className="py-16 px-6 md:px-12 max-w-7xl mx-auto">
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-10 gap-4">
-                        <h2 className="font-serif text-3xl font-bold text-sage-dark flex items-center">
-                            Shop Our Collections
-                            <svg className="ml-3 w-6 h-6 text-tangerine hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                        </h2>
-                        <Link href="#" className="px-6 py-2 border border-sage text-sage font-semibold rounded-full hover:bg-sage hover:text-white transition-colors text-sm">
-                            VIEW ALL
-                        </Link>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                        {products && products.slice(0, 4).map(product => (
-                            <div key={product.product_id} className="group cursor-pointer">
-                                <div className="bg-peach-light rounded-2xl p-4 md:p-6 aspect-square flex items-center justify-center mb-4 transition-transform transform group-hover:scale-105">
-                                    <img src={getImageUrl(product.flower_name)} alt={product.flower_name} className="w-full h-full object-cover rounded-xl shadow-sm" />
-                                </div>
-                                <div className="flex justify-between items-start px-2">
-                                    <div>
-                                        <h3 className="font-bold text-sm tracking-wide uppercase">{product.flower_name}</h3>
-                                        <p className="text-gray-500 text-sm mt-1">From ₱{product.price}</p>
+                <section className="py-8 border-b border-rose/10 bg-transparent">
+                    <div className="store-container">
+                        <ScrollReveal stagger className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+                            {[
+                                { title: 'SAME DAY DELIVERY', subtitle: 'Order before 11:00AM', icon: <Truck className="w-6 h-6 text-gray-800" strokeWidth={1.5} /> },
+                                { title: 'FRESH FROM FARMS', subtitle: 'Handpicked with care', icon: <Leaf className="w-6 h-6 text-gray-800" strokeWidth={1.5} /> },
+                                { title: 'EXPERT FLORISTS', subtitle: 'Crafted by professionals', icon: <Flower2 className="w-6 h-6 text-gray-800" strokeWidth={1.5} /> },
+                                { title: 'HAPPINESS GUARANTEED', subtitle: 'Your satisfaction, always', icon: <ShieldCheck className="w-6 h-6 text-gray-800" strokeWidth={1.5} /> },
+                            ].map((feature, i) => (
+                                <div key={i} className="flex flex-col lg:flex-row items-center lg:items-start gap-3 lg:gap-4 bg-white p-5 rounded-[28px] shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] hover:-translate-y-1 transition-all duration-300 text-center lg:text-left h-full">
+                                    <div className="flex-shrink-0 bg-gray-50/80 border border-gray-100 w-12 h-12 flex items-center justify-center rounded-full mx-auto lg:mx-0">
+                                        {feature.icon}
                                     </div>
-                                    <button onClick={() => addToCart(product)} className="w-8 h-8 rounded-full bg-tangerine-light text-white flex items-center justify-center group-hover:bg-tangerine transition-colors">
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-                                    </button>
+                                    <div className="flex flex-col justify-center h-full flex-1 min-w-0">
+                                        <div className="text-[10px] sm:text-[11px] font-bold text-gray-800 uppercase tracking-[0.12em] mb-1 font-sans truncate whitespace-normal break-words">{feature.title}</div>
+                                        <p className="text-[9px] sm:text-[10px] text-gray-400 font-medium font-sans leading-tight">{feature.subtitle}</p>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))}
+                        </ScrollReveal>
                     </div>
                 </section>
 
-                {/* Banner Section */}
-                <section className="py-12 px-6 md:px-12 max-w-7xl mx-auto">
-                    <div className="bg-sage-dark rounded-3xl overflow-hidden flex flex-col md:flex-row relative">
-                        <div className="md:w-1/2 bg-peach-dark p-8 md:p-16 flex flex-col justify-center md:rounded-r-3xl z-10 md:-mr-8 relative">
-                            <h2 className="font-serif text-3xl md:text-4xl font-bold text-gray-800 mb-4">
-                                FLOWERS THAT TELL<br/>BEAUTIFUL STORIES
-                            </h2>
-                            <p className="text-gray-700 mb-8 text-lg">
-                                We source the finest blooms and design with heart to bring beauty, joy and meaning to every moment.
-                            </p>
+                {/* Collections */}
+                <section id="collections" className="py-12 md:py-16 bg-transparent">
+                    <div className="store-container">
+                        <div className="flex justify-between items-end mb-10">
                             <div>
-                                <Link href="#" className="inline-flex items-center px-8 py-3 border-2 border-sage-dark text-sage-dark font-semibold rounded-full hover:bg-sage-dark hover:text-white transition-colors">
-                                    OUR STORY
-                                </Link>
+                                <h2 className="font-serif text-3xl md:text-4xl font-bold text-gray-800">
+                                    {isSearching ? 'Search Results' : 'Shop Our Collections'}
+                                </h2>
                             </div>
-                            <svg className="absolute bottom-8 right-8 w-12 h-12 text-tangerine opacity-50 hidden md:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                            {!isSearching && (
+                                <a href="#collections" className="inline-flex items-center justify-center rounded-full border border-gray-200 bg-white px-6 py-2 text-xs font-bold uppercase tracking-wider text-gray-600 hover:border-pink-300 hover:text-[#E91E63] transition-colors">
+                                    View All
+                                </a>
+                            )}
                         </div>
-                        <div className="w-full md:w-1/2 h-64 md:h-auto bg-sage">
-                            <img src="https://images.unsplash.com/photo-1574621124654-20aeb5a2b10a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Florist arranging flowers" className="w-full h-full object-cover opacity-90"/>
-                        </div>
+
+                        {/* Search Input Removed */}
+
+                        {isSearching ? (
+                            isLoading ? (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 animate-pulse">
+                                    {[...Array(4)].map((_, i) => (
+                                        <div key={i} className="h-80 bg-gray-100 rounded-[24px]" />
+                                    ))}
+                                </div>
+                            ) : filteredSearchResults.length > 0 ? (
+                                <ScrollReveal stagger className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                                    {filteredSearchResults.map((product) => (
+                                        <ProductCard key={product.product_id} product={product} onAdd={addToCart} searchQuery={searchQuery} />
+                                    ))}
+                                </ScrollReveal>
+                            ) : (
+                                <div className="text-center py-16">
+                                    <h3 className="font-serif text-2xl font-semibold text-gray-800 mb-2">No blooms found</h3>
+                                    <p className="text-gray-500 text-sm">Try different keywords.</p>
+                                </div>
+                            )
+                        ) : (
+                            <div className="flex flex-col gap-12 md:gap-16 pb-4">
+                                {/* Featured Flowers */}
+                                {featured.length > 0 && (
+                                    <ScrollReveal>
+                                        <div className="flex justify-between items-end mb-2">
+                                            <h2 className="font-serif text-2xl md:text-3xl font-bold text-gray-800">Featured Flowers</h2>
+                                        </div>
+                                        <div className="flex flex-col gap-2">
+                                            <ProductCarousel products={featured} onAdd={addToCart} />
+                                        </div>
+                                    </ScrollReveal>
+                                )}
+
+                                {/* Best Seller Spotlight Banner */}
+                                {popular.length > 0 && (() => {
+                                    const topProducts = popular.slice(0, 5);
+                                    
+                                    const nextSlide = () => setSpotlightIndex((p) => (p + 1) % topProducts.length);
+                                    const prevSlide = () => setSpotlightIndex((p) => (p - 1 + topProducts.length) % topProducts.length);
+
+                                    return (
+                                        <div className="flex flex-col gap-6 pt-0 pb-8 relative">
+                                            {/* Decorative Background Elements */}
+                                            <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none -z-10">
+                                                <div className="absolute top-10 left-10 w-64 h-64 bg-pink-100/50 rounded-full blur-3xl"></div>
+                                                <div className="absolute bottom-10 right-10 w-80 h-80 bg-rose-100/40 rounded-full blur-3xl"></div>
+                                            </div>
+
+                                            {/* Section Header */}
+                                            <div id="story" className="flex flex-col items-center text-center px-4">
+                                                <div className="flex items-center gap-4 mb-3">
+                                                    <div className="h-[1px] w-12 bg-pink-200"></div>
+                                                    <span className="text-[10px] sm:text-xs font-bold text-[#E91E63] uppercase tracking-[0.25em]">Curated Classics</span>
+                                                    <div className="h-[1px] w-12 bg-pink-200"></div>
+                                                </div>
+                                                <h2 className="font-serif text-4xl md:text-5xl lg:text-[56px] text-[#0f172a] mb-4">Our Favorites</h2>
+                                                <p className="text-gray-500 text-sm md:text-base max-w-lg mb-6 leading-relaxed">
+                                                    Handpicked arrangements that never go out of style. <br className="hidden sm:block" /> Made to make every moment extra special.
+                                                </p>
+                                                <div className="flex items-center gap-3 w-full max-w-[200px] opacity-60">
+                                                    <div className="h-[1px] flex-1 bg-pink-200"></div>
+                                                    <Heart className="w-4 h-4 text-[#E91E63] stroke-[1.5]" />
+                                                    <div className="h-[1px] flex-1 bg-pink-200"></div>
+                                                </div>
+                                            </div>
+
+                                            <ScrollReveal>
+                                                <div className="relative group overflow-hidden bg-transparent px-2 sm:px-4 py-8">
+                                                    {/* Sliding Track */}
+                                                    <div 
+                                                        className="flex transition-transform duration-700 cubic-bezier(0.25, 1, 0.5, 1) ease-out"
+                                                        style={{ transform: `translateX(-${spotlightIndex * 100}%)` }}
+                                                    >
+                                                        {topProducts.map((product, idx) => {
+                                                            const hook = spotlightHooks[idx % spotlightHooks.length];
+                                                            return (
+                                                                <div 
+                                                                    key={product.product_id || idx}
+                                                                    className="w-full flex-shrink-0"
+                                                                >
+                                                                    <div className="flex flex-col md:flex-row items-center gap-8 lg:gap-16 max-w-6xl mx-auto">
+                                                                        {/* Left Side: Product Image */}
+                                                                        <div className="w-full md:w-1/2 relative group-hover:scale-[1.02] transition-transform duration-500">
+                                                                            <img 
+                                                                                src={getProductImage(product)} 
+                                                                                alt={product.display_name ?? product.name ?? product.flower_name}
+                                                                                className="w-full h-auto max-h-[500px] object-contain drop-shadow-2xl"
+                                                                            />
+                                                                        </div>
+                                                                        
+                                                                        {/* Right Side: Text & Actions */}
+                                                                        <div className="w-full md:w-1/2 flex flex-col justify-center">
+                                                                            {/* Eyebrow badge */}
+                                                                            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-pink-50 border border-pink-100 text-[#E91E63] text-[10px] font-bold uppercase tracking-[0.15em] mb-4 w-fit">
+                                                                                <Star className="w-3.5 h-3.5 fill-current" />
+                                                                                <span>{hook}</span>
+                                                                            </div>
+                                                                            
+                                                                            <div className="flex items-center gap-4 mb-2">
+                                                                                <h3 className="font-serif text-4xl sm:text-5xl lg:text-6xl text-[#0f172a] leading-tight">
+                                                                                    {product.display_name ?? product.name ?? product.flower_name}
+                                                                                </h3>
+                                                                                <Heart className="w-8 h-8 text-pink-300 stroke-[1.5] -mt-4 opacity-70" />
+                                                                            </div>
+                                                                            
+                                                                            <p className="mb-6 flex items-baseline gap-4">
+                                                                                <span className="text-[#E91E63] font-serif font-bold text-3xl sm:text-4xl">₱{parseFloat(product.effective_price ?? product.price).toFixed(2)}</span>
+                                                                                {product.discount_price && parseFloat(product.discount_price) < parseFloat(product.price) && (
+                                                                                    <span className="text-lg sm:text-xl text-gray-400 font-medium line-through">₱{parseFloat(product.price).toFixed(2)}</span>
+                                                                                )}
+                                                                            </p>
+
+                                                                            <div className="flex items-center gap-3 w-full max-w-[200px] opacity-40 mb-6">
+                                                                                <div className="h-[1px] flex-1 bg-pink-200"></div>
+                                                                                <Heart className="w-3.5 h-3.5 text-[#E91E63] stroke-[1.5]" />
+                                                                                <div className="h-[1px] flex-1 bg-pink-200"></div>
+                                                                            </div>
+                                                                            
+                                                                            <p className="text-gray-500 text-sm sm:text-base leading-relaxed mb-10 max-w-lg">
+                                                                                {product.description || "A premium hand-arranged bouquet featuring carefully selected fresh flowers, balanced colors, and elegant presentation. Every bloom is thoughtfully positioned to create a sophisticated and luxurious appearance."}
+                                                                            </p>
+
+                                                                            {/* Features Grid */}
+                                                                            <div className="grid grid-cols-4 gap-2 mb-10 max-w-lg">
+                                                                                {[
+                                                                                    { icon: <Flower2 className="w-5 h-5 text-[#E91E63]" strokeWidth={1.5} />, label: "FRESH BLOOMS" },
+                                                                                    { icon: <Leaf className="w-5 h-5 text-[#E91E63]" strokeWidth={1.5} />, label: "PREMIUM QUALITY" },
+                                                                                    { icon: <Gift className="w-5 h-5 text-[#E91E63]" strokeWidth={1.5} />, label: "PERFECT FOR ANY OCCASION" },
+                                                                                    { icon: <Heart className="w-5 h-5 text-[#E91E63]" strokeWidth={1.5} />, label: "MADE WITH LOVE" }
+                                                                                ].map((feat, i) => (
+                                                                                    <div key={i} className="flex flex-col items-center text-center gap-3">
+                                                                                        <div className="w-12 h-12 rounded-full bg-pink-50 flex items-center justify-center">
+                                                                                            {feat.icon}
+                                                                                        </div>
+                                                                                        <span className="text-[8px] sm:text-[9px] font-bold text-gray-500 uppercase tracking-wider leading-tight w-full max-w-[80px]">
+                                                                                            {feat.label}
+                                                                                        </span>
+                                                                                    </div>
+                                                                                ))}
+                                                                            </div>
+                                                                            
+                                                                            <div className="flex items-center gap-8">
+                                                                                {/* Buy Now Button */}
+                                                                                <button 
+                                                                                    onClick={async () => {
+                                                                                        await addToCart(product);
+                                                                                        router.visit(route('checkout'));
+                                                                                    }} 
+                                                                                    className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#E91E63] to-[#F472B6] px-8 py-4 text-xs font-bold uppercase tracking-widest text-white shadow-[0_8px_20px_rgba(233,30,99,0.25)] hover:shadow-[0_10px_25px_rgba(233,30,99,0.35)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300"
+                                                                                >
+                                                                                    <ShoppingBag className="w-4 h-4" />
+                                                                                    Buy Now
+                                                                                </button>
+                                                                                
+                                                                                {/* Controls */}
+                                                                                <div className="flex items-center gap-4">
+                                                                                    <button onClick={prevSlide} className="w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-gray-50 text-gray-400 border border-gray-100 shadow-sm transition-colors">
+                                                                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                                                                                    </button>
+                                                                                    
+                                                                                    <div className="flex gap-2">
+                                                                                        {topProducts.map((_, dotIdx) => (
+                                                                                            <button
+                                                                                                key={dotIdx}
+                                                                                                onClick={() => setSpotlightIndex(dotIdx)}
+                                                                                                className={`h-2 rounded-full transition-all duration-300 ${
+                                                                                                    dotIdx === spotlightIndex ? 'w-2 bg-[#E91E63]' : 'w-2 bg-gray-200 hover:bg-gray-300'
+                                                                                                }`}
+                                                                                                aria-label={`Go to slide ${dotIdx + 1}`}
+                                                                                            />
+                                                                                        ))}
+                                                                                    </div>
+                                                                                    
+                                                                                    <button onClick={nextSlide} className="w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-gray-50 text-gray-400 border border-gray-100 shadow-sm transition-colors">
+                                                                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                                                                                    </button>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            </ScrollReveal>
+                                        </div>
+                                    );
+                                })()}
+
+                                {/* Best Seller */}
+                                {popular.length > 0 && (
+                                    <ScrollReveal delay={100}>
+                                        <div className="flex justify-between items-end mb-6">
+                                            <h2 className="font-serif text-2xl md:text-3xl font-bold text-gray-800">Best Seller</h2>
+                                        </div>
+                                        <ProductCarousel products={popular} onAdd={addToCart} />
+                                    </ScrollReveal>
+                                )}
+
+                                {/* Flash Sale */}
+                                {newArrivals.length > 0 && (
+                                    <ScrollReveal delay={200}>
+                                        <div className="flex justify-between items-end mb-6">
+                                            <h2 className="font-serif text-2xl md:text-3xl font-bold text-gray-800">Flash Sale</h2>
+                                        </div>
+                                        <ProductCarousel products={newArrivals} onAdd={addToCart} />
+                                    </ScrollReveal>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </section>
+
+
 
                 {/* Shop By Occasion */}
-                <section className="py-16 px-6 md:px-12 max-w-7xl mx-auto text-center">
-                    <h2 className="font-serif text-3xl font-bold text-sage-dark flex items-center justify-start mb-12">
-                        Shop By Occasion
-                        <svg className="ml-3 w-6 h-6 text-tangerine hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                    </h2>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-6">
-                        {['BIRTHDAY', 'ANNIVERSARY', 'CONGRATULATIONS', 'THANK YOU', 'SYMPATHY', 'NEW BABY'].map(occasion => (
-                            <div key={occasion} className="flex flex-col items-center group cursor-pointer">
-                                <div className="w-24 h-24 rounded-full bg-peach-dark flex items-center justify-center mb-4 text-sage group-hover:bg-tangerine group-hover:text-white transition-colors shadow-sm">
-                                    <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>
-                                </div>
-                                <span className="text-xs font-bold tracking-wider">{occasion}</span>
-                            </div>
-                        ))}
-                    </div>
-                </section>
-
-                {/* Newsletter */}
-                <section className="px-6 md:px-12 max-w-7xl mx-auto mb-16">
-                    <div className="bg-sage rounded-3xl p-8 md:p-12 flex flex-col md:flex-row items-center justify-between relative overflow-hidden">
-                        <div className="relative z-10 text-white mb-6 md:mb-0 text-center md:text-left">
-                            <h3 className="font-serif text-2xl md:text-3xl font-bold mb-2">10% OFF YOUR FIRST ORDER</h3>
-                            <p className="text-sage-light font-medium">Join our community and enjoy your first order.</p>
+                {!isSearching && (
+                    <section id="occasions" className="py-12 md:py-16 bg-transparent border-t border-rose/10">
+                        <div className="store-container">
+                            <h2 className="font-serif text-2xl md:text-3xl font-bold text-gray-800 mb-10">Shop By Occasion</h2>
+                            <ScrollReveal stagger className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-6 justify-items-center">
+                                {[
+                                    { name: 'BIRTHDAY', icon: <Gift className="w-6 h-6 md:w-7 md:h-7 text-gray-800" strokeWidth={1.5} /> },
+                                    { name: 'ANNIVERSARY', icon: <Heart className="w-6 h-6 md:w-7 md:h-7 text-gray-800" strokeWidth={1.5} /> },
+                                    { name: 'CONGRATULATIONS', icon: <Sparkles className="w-6 h-6 md:w-7 md:h-7 text-gray-800" strokeWidth={1.5} /> },
+                                    { name: 'THANK YOU', icon: <HandHeart className="w-6 h-6 md:w-7 md:h-7 text-gray-800" strokeWidth={1.5} /> },
+                                    { name: 'SYMPATHY', icon: <Feather className="w-6 h-6 md:w-7 md:h-7 text-gray-800" strokeWidth={1.5} /> },
+                                    { name: 'NEW BABY', icon: <Footprints className="w-6 h-6 md:w-7 md:h-7 text-gray-800" strokeWidth={1.5} /> },
+                                ].map((occ, idx) => (
+                                    <a href="#collections" key={idx} className="flex flex-col items-center group">
+                                        <div className="w-20 h-20 md:w-[90px] md:h-[90px] rounded-full bg-gray-50/80 flex items-center justify-center mb-5 transition-all duration-500 group-hover:-translate-y-2 hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-transparent group-hover:border-gray-200">
+                                            {occ.icon}
+                                        </div>
+                                        <span className="text-[9px] font-bold text-gray-500 uppercase tracking-[0.2em] text-center group-hover:text-gray-900 transition-colors">{occ.name}</span>
+                                    </a>
+                                ))}
+                            </ScrollReveal>
                         </div>
-                        <div className="relative z-10 flex flex-col sm:flex-row w-full md:w-auto gap-4 sm:gap-0">
-                            <input 
-                                type="email" 
-                                placeholder="Enter your email address" 
-                                className="px-6 py-4 rounded-full sm:rounded-l-full sm:rounded-r-none w-full md:w-80 focus:outline-none focus:ring-2 focus:ring-tangerine text-gray-800 border-none shadow-sm"
-                            />
-                            <button className="bg-tangerine hover:bg-tangerine-dark text-white font-bold px-8 py-4 rounded-full sm:rounded-l-none sm:rounded-r-full transition-colors shadow-sm">
-                                SUBSCRIBE
-                            </button>
-                        </div>
-                    </div>
-                </section>
+                    </section>
+                )}
 
-                {/* Best Sellers */}
-                <section className="py-16 px-6 md:px-12 max-w-7xl mx-auto pb-24">
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-10 gap-4">
-                        <h2 className="font-serif text-3xl font-bold text-sage-dark flex items-center">
-                            Best Sellers
-                            <svg className="ml-3 w-6 h-6 text-tangerine hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                        </h2>
-                        <Link href="#" className="px-6 py-2 border border-sage text-sage font-semibold rounded-full hover:bg-sage hover:text-white transition-colors text-sm">
-                            VIEW ALL
-                        </Link>
-                    </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                        {products && products.slice(4, 8).map(product => (
-                            <div key={product.product_id} className="group cursor-pointer">
-                                <div className="bg-peach-light rounded-2xl p-4 md:p-6 aspect-square flex items-center justify-center mb-4 transition-transform transform group-hover:scale-105">
-                                    <img src={getImageUrl(product.flower_name)} alt={product.flower_name} className="w-full h-full object-cover rounded-xl shadow-sm" />
-                                </div>
-                                <div className="flex justify-between items-start px-2">
-                                    <div>
-                                        <h3 className="font-bold text-sm tracking-wide uppercase">{product.flower_name}</h3>
-                                        <p className="text-gray-500 text-sm mt-1">₱{product.price}</p>
-                                    </div>
-                                    <button onClick={() => addToCart(product)} className="w-8 h-8 rounded-full bg-tangerine-light text-white flex items-center justify-center group-hover:bg-tangerine transition-colors">
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </section>
 
-                {/* Footer */}
-                <footer className="bg-sage-dark text-sage-light py-12 px-6 md:px-12">
-                    <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center text-center md:text-left gap-4">
-                        <div className="font-serif text-2xl font-bold text-white">Bloom&Grow</div>
-                        <p className="text-sm">© 2026 Bloom&Grow. All rights reserved.</p>
-                    </div>
-                </footer>
+
+
+                <StoreFooter />
             </div>
         </>
     );

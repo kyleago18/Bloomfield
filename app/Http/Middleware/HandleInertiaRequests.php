@@ -29,10 +29,27 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user           = $request->user();
+        $unreadCount    = 0;
+
+        if ($user) {
+            $user->load('seller');
+            $unreadCount = \App\Models\Notification::where('user_id', $user->id)
+                ->whereNull('read_at')
+                ->count();
+        }
+
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user(),
+                'user' => $user,
+            ],
+            'stripeKey'    => config('services.stripe.key'),
+            'unread_count' => $unreadCount,
+            'flash' => [
+                'success' => fn () => $request->session()->get('success'),
+                'error'   => fn () => $request->session()->get('error'),
+                'info'    => fn () => $request->session()->get('info'),
             ],
         ];
     }
